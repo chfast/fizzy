@@ -283,7 +283,7 @@ std::unique_ptr<Instance> instantiate(Module module,
     {
         // Offset is validated to be i32, but it's used in 64-bit calculation below.
         const uint64_t offset =
-            eval_constant_expression(data.offset, imported_globals, globals).i64;
+            eval_constant_expression(data.offset, imported_globals, globals).i32;
 
         if (offset + data.init.size() > memory->size())
             throw instantiate_error{"data segment is out of memory bounds"};
@@ -298,7 +298,7 @@ std::unique_ptr<Instance> instantiate(Module module,
     {
         // Offset is validated to be i32, but it's used in 64-bit calculation below.
         const uint64_t offset =
-            eval_constant_expression(element.offset, imported_globals, globals).i64;
+            eval_constant_expression(element.offset, imported_globals, globals).i32;
 
         if (offset + element.init.size() > table->size())
             throw instantiate_error{"element segment is out of table bounds"};

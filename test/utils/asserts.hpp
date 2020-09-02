@@ -28,7 +28,7 @@ MATCHER_P(Result, value, "")  // NOLINT(readability-redundant-string-init)
     if constexpr (std::is_floating_point_v<value_type>)
         return arg.value.template as<value_type>() == fizzy::test::FP{value};
     else  // always check 64 bit of result for all integers, including 32-bit results
-        return arg.value.i64 == static_cast<std::make_unsigned_t<value_type>>(value);
+        return arg.value.template as<value_type>() == value;
 }
 
 #define EXPECT_THROW_MESSAGE(stmt, ex_type, expected)                                        \
@@ -60,7 +60,6 @@ namespace fizzy::test
 {
 inline uint32_t as_uint32(fizzy::Value value)
 {
-    EXPECT_EQ(value.i64 & 0xffffffff00000000, 0);
-    return static_cast<uint32_t>(value.i64);
+    return value.i32;
 }
 }  // namespace fizzy::test

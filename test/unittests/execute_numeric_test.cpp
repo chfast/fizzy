@@ -14,7 +14,7 @@ using namespace fizzy::test;
 
 namespace
 {
-ExecutionResult execute_unary_operation(Instr instr, uint64_t arg)
+ExecutionResult execute_unary_operation(Instr instr, Value arg)
 {
     Module module;
     // type is currently needed only to get arity of function, so exact value types don't matter
@@ -463,8 +463,32 @@ TEST(execute_numeric, i64_extend_i32_s_1)
 
 TEST(execute_numeric, i64_extend_i32_u)
 {
+    Value v;
+    v.i64 = 0xdeaddeaddeaddead;
+    v.i32 = 0xff000000;
     EXPECT_THAT(
-        execute_unary_operation(Instr::i64_extend_i32_u, 0xff000000), Result(0x00000000ff000000));
+        execute_unary_operation(Instr::i64_extend_i32_u, v), Result(uint64_t{0x00000000ff000000}));
+}
+
+TEST(execute_numeric, i64_extend_i32_u_2)
+{
+    /* wat2wasm
+    (func (param i32) (result i64)
+      i64.const 0xdeadbeefdeadbeef
+      drop
+      local.get 0
+      i64.extend_i32_u
+    )
+    */
+    const auto wasm = from_hex(
+        "0061736d0100000001060160017f017e030201000a1201100042effdb6f5fdddefd65e1a2000ad0b");
+
+    auto instance = instantiate(parse(wasm));
+    Value v;
+    v.i64 = 0xfefefefefefefefe;
+    v.i32 = 0xff000000;
+    const auto r = execute(*instance, 0, {v});
+    EXPECT_THAT(r, Result(uint64_t{0x00000000ff000000}));
 }
 
 TEST(execute_numeric, i64_clz)
