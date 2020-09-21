@@ -36,6 +36,35 @@ pub fn parse<T: AsRef<[u8]>>(input: &T) -> Option<Module> {
     Some(Module { ptr: ptr })
 }
 
+pub struct Instance {
+    ptr: NonNull<sys::FizzyInstance>,
+}
+
+impl Drop for Instance {
+    fn drop(&mut self) {
+        unsafe { sys::fizzy_free_instance(self.ptr.as_ptr()) }
+    }
+}
+
+impl Module {
+    // TODO: support imported functions{
+    pub fn instantiate(self) -> Option<Instance> {
+        // An instance was already created.
+        if self.ptr.is_null() {
+            return None;
+        }
+        let ptr = unsafe { sys::fizzy_instantiate(self.ptr, std::ptr::null_mut(), 0) };
+        // Forget pointer because it has been consumed by instantiate (even if it failed).
+        core::mem::forget(self);
+        if ptr.is_null() {
+            return None;
+        }
+        Some(Instance {
+            ptr: unsafe { NonNull::new_unchecked(ptr) },
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -62,5 +91,13 @@ mod tests {
     fn parse_wasm() {
         assert!(parse(&[0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00]).is_some());
         assert!(parse(&[0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x01]).is_none());
+    }
+
+    #[test]
+    fn instantiate_wasm() {
+        let module = parse(&[0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00]);
+        assert!(module.is_some());
+        let instance = module.unwrap().instantiate();
+        assert!(instance.is_some());
     }
 }
