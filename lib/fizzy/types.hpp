@@ -15,7 +15,7 @@
 namespace fizzy
 {
 // https://webassembly.github.io/spec/core/binary/types.html#binary-valtype
-enum class ValType : uint8_t
+enum class ValType
 {
     i32 = 0x7f,
     i64 = 0x7e,

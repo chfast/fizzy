@@ -93,6 +93,13 @@ const struct FizzyModule* fizzy_parse(const uint8_t* wasm_binary, size_t wasm_bi
 /// Should be called unless @p module was passed to fizzy_instantiate.
 void fizzy_free_module(const struct FizzyModule* module);
 
+/// Get type of the function defined in the module.
+///
+/// @param module   Pointer to module.
+/// @param func_idx Function index. Can be index of an imported function.
+struct FizzyFunctionType fizzy_get_function_type(
+    const struct FizzyModule* module, uint32_t func_idx);
+
 bool fizzy_find_exported_function(
     const struct FizzyModule* module, const char* name, uint32_t* out_func_idx);
 

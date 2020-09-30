@@ -21,9 +21,22 @@ inline const fizzy::Module* unwrap(const FizzyModule* module) noexcept
     return reinterpret_cast<const fizzy::Module*>(module);
 }
 
+static_assert(sizeof(FizzyValueType) == sizeof(fizzy::ValType));
+
+inline const FizzyValueType* wrap(const fizzy::ValType* value_types) noexcept
+{
+    return reinterpret_cast<const FizzyValueType*>(value_types);
+}
+
 inline fizzy::ValType unwrap(FizzyValueType value_type) noexcept
 {
-    return static_cast<fizzy::ValType>(static_cast<uint8_t>(value_type));
+    return static_cast<fizzy::ValType>(value_type);
+}
+
+inline FizzyFunctionType wrap(const fizzy::FuncType& type) noexcept
+{
+    return {(type.inputs.empty() ? nullptr : wrap(&type.inputs[0])), type.inputs.size(),
+        (type.outputs.empty() ? nullptr : wrap(&type.outputs[0])), type.outputs.size()};
 }
 
 inline fizzy::FuncType unwrap(const FizzyFunctionType& type)
@@ -131,6 +144,11 @@ const FizzyModule* fizzy_parse(const uint8_t* wasm_binary, size_t wasm_binary_si
 void fizzy_free_module(const FizzyModule* module)
 {
     delete unwrap(module);
+}
+
+FizzyFunctionType fizzy_get_function_type(const struct FizzyModule* module, uint32_t func_idx)
+{
+    return wrap(unwrap(module)->get_function_type(func_idx));
 }
 
 bool fizzy_find_exported_function(
