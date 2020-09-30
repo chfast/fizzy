@@ -65,6 +65,16 @@ impl Module {
     }
 }
 
+pub type Value = sys::FizzyValue;
+
+pub type ExecutionResult = sys::FizzyExecutionResult;
+
+impl Instance {
+    pub fn execute(&mut self, func_idx: u32, args: &[Value]) -> ExecutionResult {
+        unsafe { sys::fizzy_execute(self.ptr.as_ptr(), func_idx, args.as_ptr(), args.len(), 0) }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -99,5 +109,37 @@ mod tests {
         assert!(module.is_some());
         let instance = module.unwrap().instantiate();
         assert!(instance.is_some());
+    }
+
+    #[test]
+    fn execute_wasm() {
+        let input = hex::decode("0061736d01000000010e036000006000017f60027f7f017f030504000102000a150402000b0400412a0b0700200020016e0b0300000b").unwrap();
+        let module = parse(&input);
+        assert!(module.is_some());
+        let instance = module.unwrap().instantiate();
+        assert!(instance.is_some());
+        let mut instance = instance.unwrap();
+
+        let result = instance.execute(0, &[]);
+        assert!(!result.trapped);
+        assert!(!result.has_value);
+
+        let result = instance.execute(1, &[]);
+        assert!(!result.trapped);
+        assert!(result.has_value);
+        unsafe {
+            assert_eq!(result.value.i64, 42);
+        } // FIXME: this is actually i32
+
+        let result = instance.execute(2, &[Value { i64: 42 }, Value { i64: 2 }]);
+        assert!(!result.trapped);
+        assert!(result.has_value);
+        unsafe {
+            assert_eq!(result.value.i64, 21);
+        } // FIXME: this is actually i32
+
+        let result = instance.execute(3, &[]);
+        assert!(result.trapped);
+        assert!(!result.has_value);
     }
 }
