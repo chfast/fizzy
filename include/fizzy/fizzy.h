@@ -50,11 +50,33 @@ typedef struct FizzyExecutionResult
 typedef FizzyExecutionResult (*FizzyExternalFn)(void* context, FizzyInstance* instance,
     const union FizzyValue* args, size_t args_size, int depth);
 
+/// Value type.
+enum FizzyValueType
+{
+    FizzyValueTypeI32 = 0x7f,
+    FizzyValueTypeI64 = 0x7e,
+    FizzyValueTypeF32 = 0x7d,
+    FizzyValueTypeF64 = 0x7c,
+};
+
+/// Function type.
+typedef struct FizzyFunctionType
+{
+    /// Pointer to input types array.
+    const enum FizzyValueType* inputs;
+    /// Input types array size.
+    size_t inputs_size;
+    /// Pointer to output types array.
+    const enum FizzyValueType* outputs;
+    /// Output types array size.
+    size_t outputs_size;
+} FizzyFunctionType;
+
 /// External function.
 typedef struct FizzyExternalFunction
 {
-    // TODO function type
-
+    /// Function type.
+    FizzyFunctionType type;
     /// Pointer to function.
     FizzyExternalFn function;
     /// Opaque pointer to execution context, that will be passed to function.
