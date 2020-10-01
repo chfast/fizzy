@@ -16,15 +16,12 @@ pub fn validate<T: AsRef<[u8]>>(input: T) -> bool {
 }
 
 pub struct Module {
-    ptr: *mut sys::FizzyModule,
+    ptr: NonNull<sys::FizzyModule>,
 }
 
 impl Drop for Module {
     fn drop(&mut self) {
-        // This is null if we took ownership with instantiate
-        if !self.ptr.is_null() {
-            unsafe { sys::fizzy_free_module(self.ptr) }
-        }
+        unsafe { sys::fizzy_free_module(self.ptr.as_ptr()) }
     }
 }
 
@@ -33,7 +30,9 @@ pub fn parse<T: AsRef<[u8]>>(input: &T) -> Option<Module> {
     if ptr.is_null() {
         return None;
     }
-    Some(Module { ptr: ptr })
+    Some(Module {
+        ptr: unsafe { NonNull::new_unchecked(ptr) },
+    })
 }
 
 pub struct Instance {
@@ -49,12 +48,8 @@ impl Drop for Instance {
 impl Module {
     // TODO: support imported functions{
     pub fn instantiate(self) -> Option<Instance> {
-        // An instance was already created.
-        if self.ptr.is_null() {
-            return None;
-        }
-        let ptr = unsafe { sys::fizzy_instantiate(self.ptr, std::ptr::null_mut(), 0) };
-        // Forget pointer because it has been consumed by instantiate (even if it failed).
+        let ptr = unsafe { sys::fizzy_instantiate(self.ptr.as_ptr(), std::ptr::null_mut(), 0) };
+        // Forget Module (and avoid calling drop) because it has been consumed by instantiate (even if it failed).
         core::mem::forget(self);
         if ptr.is_null() {
             return None;
