@@ -38,7 +38,7 @@ constexpr ExecutionResult Trap{false};
 
 // Execute a function on an instance.
 ExecutionResult execute(
-    Instance& instance, FuncIdx func_idx, const Value* args, int depth = 0) noexcept;
+    Instance& instance, FuncIdx func_idx, const Value* args, int depth = -1) noexcept;
 
 inline ExecutionResult execute(
     Instance& instance, FuncIdx func_idx, std::initializer_list<Value> args) noexcept

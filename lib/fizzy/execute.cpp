@@ -433,7 +433,7 @@ inline bool invoke_function(const FuncType& func_type, const F& func, Instance& 
     assert(stack.size() >= num_args);
     span<const Value> call_args{stack.rend() - num_args, num_args};
 
-    const auto ret = func(instance, call_args, depth + 1);
+    const auto ret = func(instance, call_args, depth);
     // Bubble up traps
     if (ret.trapped)
         return false;
@@ -463,6 +463,8 @@ inline bool invoke_function(const FuncType& func_type, uint32_t func_idx, Instan
 
 ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args, int depth) noexcept
 {
+    depth += 1;
+
     assert(depth >= 0);
     if (depth > CallStackLimit)
         return Trap;

@@ -533,8 +533,8 @@ TEST(execute_call, call_max_depth)
     const auto module = parse(bin);
     auto instance = instantiate(module);
 
-    EXPECT_THAT(execute(*instance, 0, {}, MaxDepth), Result(42));
-    EXPECT_THAT(execute(*instance, 1, {}, MaxDepth), Traps());
+    EXPECT_THAT(execute(*instance, 0, {}, MaxDepth - 1), Result(42));
+    EXPECT_THAT(execute(*instance, 1, {}, MaxDepth - 1), Traps());
 }
 
 // A regression test for incorrect number of arguments passed to a call.
@@ -570,7 +570,7 @@ TEST(execute_call, call_imported_infinite_recursion)
     const auto module = parse(wasm);
     auto host_foo = [](Instance& instance, span<const Value>, int depth) -> ExecutionResult {
         EXPECT_LE(depth, MaxDepth);
-        return execute(instance, 0, {}, depth + 1);
+        return execute(instance, 0, {}, depth);
     };
     const auto host_foo_type = module.typesec[0];
 
@@ -594,7 +594,7 @@ TEST(execute_call, call_via_imported_infinite_recursion)
     auto host_foo = [](Instance& instance, span<const Value>, int depth) -> ExecutionResult {
         // Function $f will increase depth. This means each iteration goes 2 steps deeper.
         EXPECT_LE(depth, MaxDepth - 1);
-        return execute(instance, 1, {}, depth + 1);
+        return execute(instance, 1, {}, depth);
     };
     const auto host_foo_type = module.typesec[0];
 
@@ -614,7 +614,7 @@ TEST(execute_call, call_imported_max_depth_recursion)
     auto host_foo = [](Instance& instance, span<const Value>, int depth) -> ExecutionResult {
         if (depth == MaxDepth)
             return Value{uint32_t{1}};  // Terminate recursion on the max depth.
-        return execute(instance, 0, {}, depth + 1);
+        return execute(instance, 0, {}, depth);
     };
     const auto host_foo_type = module.typesec[0];
 
@@ -639,7 +639,7 @@ TEST(execute_call, call_via_imported_max_depth_recursion)
         // Function $f will increase depth. This means each iteration goes 2 steps deeper.
         if (depth == (MaxDepth - 1))
             return Value{uint32_t{1}};  // Terminate recursion on the max depth.
-        return execute(instance, 1, {}, depth + 1);
+        return execute(instance, 1, {}, depth);
     };
     const auto host_foo_type = module.typesec[0];
 
