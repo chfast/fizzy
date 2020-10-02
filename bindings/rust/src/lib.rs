@@ -121,11 +121,33 @@ impl From<f64> for Value {
     }
 }
 
-pub type ExecutionResult = sys::FizzyExecutionResult;
+pub struct ExecutionResult(sys::FizzyExecutionResult);
+
+impl ExecutionResult {
+    pub fn trapped(&self) -> bool {
+        self.0.trapped
+    }
+    pub fn value(&self) -> Option<Value> {
+        if self.0.has_value {
+            return Some(self.0.value);
+        }
+        None
+    }
+}
+
+impl From<ExecutionResult> for sys::FizzyExecutionResult {
+    fn from(v: ExecutionResult) -> Self {
+        v.0
+    }
+}
 
 impl Instance {
     pub fn execute(&mut self, func_idx: u32, args: &[Value]) -> ExecutionResult {
-        unsafe { sys::fizzy_execute(self.ptr.as_ptr(), func_idx, args.as_ptr(), args.len(), 0) }
+        ExecutionResult {
+            0: unsafe {
+                sys::fizzy_execute(self.ptr.as_ptr(), func_idx, args.as_ptr(), args.len(), 0)
+            },
+        }
     }
 }
 
@@ -175,28 +197,28 @@ mod tests {
         let mut instance = instance.unwrap();
 
         let result = instance.execute(0, &[]);
-        assert!(!result.trapped);
-        assert!(!result.has_value);
+        assert!(!result.trapped());
+        assert!(!result.value().is_some());
 
         let result = instance.execute(1, &[]);
-        assert!(!result.trapped);
-        assert!(result.has_value);
-        assert_eq!(result.value.as_i32(), 42);
+        assert!(!result.trapped());
+        assert!(result.value().is_some());
+        assert_eq!(result.value().unwrap().as_i32(), 42);
 
         // Explicit type specification
         let result = instance.execute(2, &[(42 as i32).into(), (2 as i32).into()]);
-        assert!(!result.trapped);
-        assert!(result.has_value);
-        assert_eq!(result.value.as_i32(), 21);
+        assert!(!result.trapped());
+        assert!(result.value().is_some());
+        assert_eq!(result.value().unwrap().as_i32(), 21);
 
         // Implicit i64 types (even though the code expects i32)
         let result = instance.execute(2, &[42.into(), 2.into()]);
-        assert!(!result.trapped);
-        assert!(result.has_value);
-        assert_eq!(result.value.as_i32(), 21);
+        assert!(!result.trapped());
+        assert!(result.value().is_some());
+        assert_eq!(result.value().unwrap().as_i32(), 21);
 
         let result = instance.execute(3, &[]);
-        assert!(result.trapped);
-        assert!(!result.has_value);
+        assert!(result.trapped());
+        assert!(!result.value().is_some());
     }
 }
