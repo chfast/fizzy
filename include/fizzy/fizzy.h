@@ -86,6 +86,8 @@ struct FizzyInstance* fizzy_instantiate(const struct FizzyModule* module,
 /// Free resources associated with the instance.
 void fizzy_free_instance(struct FizzyInstance* instance);
 
+const struct FizzyModule* fizzy_get_instance_module(struct FizzyInstance* instance);
+
 uint8_t* fizzy_get_instance_memory_data(struct FizzyInstance* instance);
 
 size_t fizzy_get_instance_memory_size(struct FizzyInstance* instance);
