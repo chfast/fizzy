@@ -499,7 +499,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
             break;
         case Instr::if_:
         {
-            if (stack.pop().as<uint32_t>() != 0)
+            if (sp--->as<uint32_t>() != 0)
                 immediates += 2 * sizeof(uint32_t);  // Skip the immediates for else instruction.
             else
             {
@@ -537,7 +537,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
             const auto arity = read<uint32_t>(immediates);
 
             // Check condition for br_if.
-            if (instruction == Instr::br_if && stack.pop().as<uint32_t>() == 0)
+            if (instruction == Instr::br_if && sp--->as<uint32_t>() == 0)
             {
                 immediates += BranchImmediateSize;
                 break;
@@ -551,7 +551,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
             const auto br_table_size = read<uint32_t>(immediates);
             const auto arity = read<uint32_t>(immediates);
 
-            const auto br_table_idx = stack.pop().as<uint32_t>();
+            const auto br_table_idx = sp--->as<uint32_t>();
 
             const auto label_idx_offset = br_table_idx < br_table_size ?
                                               br_table_idx * BranchImmediateSize :
@@ -577,7 +577,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
             const auto expected_type_idx = read<uint32_t>(immediates);
             assert(expected_type_idx < instance.module.typesec.size());
 
-            const auto elem_idx = stack.pop().as<uint32_t>();
+            const auto elem_idx = sp--->as<uint32_t>();
             if (elem_idx >= instance.table->size())
                 goto trap;
 
@@ -597,15 +597,15 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
         }
         case Instr::drop:
         {
-            stack.pop();
+            --sp;
             break;
         }
         case Instr::select:
         {
-            const auto condition = stack.pop().as<uint32_t>();
+            const auto condition = sp--->as<uint32_t>();
             // NOTE: these two are the same type (ensured by validation)
-            const auto val2 = stack.pop();
-            const auto val1 = stack.pop();
+            const auto val2 = *sp--;
+            const auto val1 = *sp--;
             if (condition == 0)
                 stack.push(val2);
             else
@@ -621,7 +621,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
         case Instr::local_set:
         {
             const auto idx = read<uint32_t>(immediates);
-            stack.local(idx) = stack.pop();
+            stack.local(idx) = *sp--;
             break;
         }
         case Instr::local_tee:
@@ -652,14 +652,14 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
             if (idx < instance.imported_globals.size())
             {
                 assert(instance.imported_globals[idx].type.is_mutable);
-                *instance.imported_globals[idx].value = stack.pop();
+                *instance.imported_globals[idx].value = *sp--;
             }
             else
             {
                 const auto module_global_idx = idx - instance.imported_globals.size();
                 assert(module_global_idx < instance.module.globalsec.size());
                 assert(instance.module.globalsec[module_global_idx].type.is_mutable);
-                instance.globals[module_global_idx] = stack.pop();
+                instance.globals[module_global_idx] = *sp--;
             }
             break;
         }
@@ -798,7 +798,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
         }
         case Instr::memory_grow:
         {
-            const auto delta = stack.pop().as<uint32_t>();
+            const auto delta = sp--->as<uint32_t>();
             const auto cur_pages = memory->size() / PageSize;
             assert(cur_pages <= size_t(std::numeric_limits<int32_t>::max()));
             const auto new_pages = cur_pages + delta;
@@ -833,7 +833,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
         }
         case Instr::i32_eqz:
         {
-            const auto value = stack.pop().as<uint32_t>();
+            const auto value = sp--->as<uint32_t>();
             stack.push(uint32_t{value == 0});
             break;
         }
@@ -890,7 +890,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
         }
         case Instr::i64_eqz:
         {
-            stack.push(uint32_t{stack.pop().i64 == 0});
+            stack.push(uint32_t{sp--->i64 == 0});
             break;
         }
         case Instr::i64_eq:
@@ -1063,10 +1063,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
                 goto trap;
             auto const lhs = stack[1].as<int32_t>();
             if (lhs == std::numeric_limits<int32_t>::min() && rhs == -1)
-            {
-                stack.pop();
-                *sp = 0;
-            }
+                *--sp = 0;
             else
                 binary_op(sp, rem<int32_t>);
             break;
@@ -1176,10 +1173,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
                 goto trap;
             auto const lhs = stack[1].as<int64_t>();
             if (lhs == std::numeric_limits<int64_t>::min() && rhs == -1)
-            {
-                stack.pop();
-                *sp = 0;
-            }
+                *--sp = 0;
             else
                 binary_op(sp, rem<int64_t>);
             break;
@@ -1386,7 +1380,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
 
         case Instr::i32_wrap_i64:
         {
-            stack.push(stack.pop().as<uint32_t>());
+            stack.push(sp--->as<uint32_t>());
             break;
         }
         case Instr::i32_trunc_f32_s:
@@ -1415,7 +1409,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
         }
         case Instr::i64_extend_i32_s:
         {
-            const auto value = stack.pop().as<int32_t>();
+            const auto value = sp--->as<int32_t>();
             stack.push(int64_t{value});
             break;
         }
@@ -1529,7 +1523,7 @@ end:
     assert(pc == &code.instructions[code.instructions.size()]);  // End of code must be reached.
     assert(stack.size() == instance.module.get_function_type(func_idx).outputs.size());
 
-    return stack.size() != 0 ? ExecutionResult{stack.pop()} : Void;
+    return stack.size() != 0 ? ExecutionResult{*sp} : Void;
 
 trap:
     return Trap;
