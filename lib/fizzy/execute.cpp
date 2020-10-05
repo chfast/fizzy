@@ -629,7 +629,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
         case Instr::local_tee:
         {
             const auto idx = read<uint32_t>(immediates);
-            stack.local(idx) = stack.top();
+            stack.local(idx) = *sp;
             break;
         }
         case Instr::global_get:
@@ -1052,7 +1052,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
         }
         case Instr::i32_div_u:
         {
-            auto const rhs = stack.top().as<uint32_t>();
+            auto const rhs = sp->as<uint32_t>();
             if (rhs == 0)
                 goto trap;
             binary_op(sp, div<uint32_t>);
@@ -1060,14 +1060,14 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
         }
         case Instr::i32_rem_s:
         {
-            auto const rhs = stack.top().as<int32_t>();
+            auto const rhs = sp->as<int32_t>();
             if (rhs == 0)
                 goto trap;
             auto const lhs = stack[1].as<int32_t>();
             if (lhs == std::numeric_limits<int32_t>::min() && rhs == -1)
             {
                 stack.pop();
-                stack.top() = 0;
+                *sp = 0;
             }
             else
                 binary_op(sp, rem<int32_t>);
@@ -1075,7 +1075,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
         }
         case Instr::i32_rem_u:
         {
-            auto const rhs = stack.top().as<uint32_t>();
+            auto const rhs = sp->as<uint32_t>();
             if (rhs == 0)
                 goto trap;
             binary_op(sp, rem<uint32_t>);
@@ -1165,7 +1165,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
         }
         case Instr::i64_div_u:
         {
-            auto const rhs = stack.top().i64;
+            auto const rhs = sp->i64;
             if (rhs == 0)
                 goto trap;
             binary_op(sp, div<uint64_t>);
@@ -1173,14 +1173,14 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
         }
         case Instr::i64_rem_s:
         {
-            auto const rhs = stack.top().as<int64_t>();
+            auto const rhs = sp->as<int64_t>();
             if (rhs == 0)
                 goto trap;
             auto const lhs = stack[1].as<int64_t>();
             if (lhs == std::numeric_limits<int64_t>::min() && rhs == -1)
             {
                 stack.pop();
-                stack.top() = 0;
+                *sp = 0;
             }
             else
                 binary_op(sp, rem<int64_t>);
@@ -1188,7 +1188,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
         }
         case Instr::i64_rem_u:
         {
-            auto const rhs = stack.top().i64;
+            auto const rhs = sp->i64;
             if (rhs == 0)
                 goto trap;
             binary_op(sp, rem<uint64_t>);
@@ -1472,7 +1472,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
         }
         case Instr::f32_demote_f64:
         {
-            stack.top() = demote(stack.top().f64);
+            *sp = demote(sp->f64);
             break;
         }
         case Instr::f64_convert_i32_s:
@@ -1497,7 +1497,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
         }
         case Instr::f64_promote_f32:
         {
-            stack.top() = double{stack.top().f32};
+            *sp = double{sp->f32};
             break;
         }
         case Instr::i32_reinterpret_f32:
