@@ -156,13 +156,14 @@ inline void unary_op(Value* sp, Op op) noexcept
 }
 
 template <typename Op>
-inline void binary_op(OperandStack& stack, Op op) noexcept
+inline void binary_op(Value*& sp, Op op) noexcept
 {
     using T = decltype(op({}, {}));
-    const auto val2 = stack.pop().as<T>();
-    const auto val1 = stack.top().as<T>();
+    const auto val2 = sp->as<T>();
+    --sp;
+    const auto val1 = sp->as<T>();
     const auto result = op(val1, val2);
-    stack.top() = Value{result};  // Convert to Value, also from signed integer types.
+    *sp = Value{result};  // Convert to Value, also from signed integer types.
 }
 
 template <typename T, template <typename> class Op>
@@ -1023,17 +1024,17 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
         case Instr::i32_add:
         {
             asm("/*i32_add*/");
-            binary_op(stack, add<uint32_t>);
+            binary_op(stack.sp(), add<uint32_t>);
             break;
         }
         case Instr::i32_sub:
         {
-            binary_op(stack, sub<uint32_t>);
+            binary_op(stack.sp(), sub<uint32_t>);
             break;
         }
         case Instr::i32_mul:
         {
-            binary_op(stack, mul<uint32_t>);
+            binary_op(stack.sp(), mul<uint32_t>);
             break;
         }
         case Instr::i32_div_s:
@@ -1042,7 +1043,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
             auto const lhs = stack[1].as<int32_t>();
             if (rhs == 0 || (lhs == std::numeric_limits<int32_t>::min() && rhs == -1))
                 goto trap;
-            binary_op(stack, div<int32_t>);
+            binary_op(stack.sp(), div<int32_t>);
             break;
         }
         case Instr::i32_div_u:
@@ -1050,7 +1051,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
             auto const rhs = stack.top().as<uint32_t>();
             if (rhs == 0)
                 goto trap;
-            binary_op(stack, div<uint32_t>);
+            binary_op(stack.sp(), div<uint32_t>);
             break;
         }
         case Instr::i32_rem_s:
@@ -1065,7 +1066,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
                 stack.top() = 0;
             }
             else
-                binary_op(stack, rem<int32_t>);
+                binary_op(stack.sp(), rem<int32_t>);
             break;
         }
         case Instr::i32_rem_u:
@@ -1073,47 +1074,47 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
             auto const rhs = stack.top().as<uint32_t>();
             if (rhs == 0)
                 goto trap;
-            binary_op(stack, rem<uint32_t>);
+            binary_op(stack.sp(), rem<uint32_t>);
             break;
         }
         case Instr::i32_and:
         {
-            binary_op(stack, std::bit_and<uint32_t>());
+            binary_op(stack.sp(), std::bit_and<uint32_t>());
             break;
         }
         case Instr::i32_or:
         {
-            binary_op(stack, std::bit_or<uint32_t>());
+            binary_op(stack.sp(), std::bit_or<uint32_t>());
             break;
         }
         case Instr::i32_xor:
         {
-            binary_op(stack, std::bit_xor<uint32_t>());
+            binary_op(stack.sp(), std::bit_xor<uint32_t>());
             break;
         }
         case Instr::i32_shl:
         {
-            binary_op(stack, shift_left<uint32_t>);
+            binary_op(stack.sp(), shift_left<uint32_t>);
             break;
         }
         case Instr::i32_shr_s:
         {
-            binary_op(stack, shift_right<int32_t>);
+            binary_op(stack.sp(), shift_right<int32_t>);
             break;
         }
         case Instr::i32_shr_u:
         {
-            binary_op(stack, shift_right<uint32_t>);
+            binary_op(stack.sp(), shift_right<uint32_t>);
             break;
         }
         case Instr::i32_rotl:
         {
-            binary_op(stack, rotl<uint32_t>);
+            binary_op(stack.sp(), rotl<uint32_t>);
             break;
         }
         case Instr::i32_rotr:
         {
-            binary_op(stack, rotr<uint32_t>);
+            binary_op(stack.sp(), rotr<uint32_t>);
             break;
         }
 
@@ -1136,17 +1137,17 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
         case Instr::i64_add:
         {
             asm("/*i64_add*/");
-            binary_op(stack, add<uint64_t>);
+            binary_op(stack.sp(), add<uint64_t>);
             break;
         }
         case Instr::i64_sub:
         {
-            binary_op(stack, sub<uint64_t>);
+            binary_op(stack.sp(), sub<uint64_t>);
             break;
         }
         case Instr::i64_mul:
         {
-            binary_op(stack, mul<uint64_t>);
+            binary_op(stack.sp(), mul<uint64_t>);
             break;
         }
         case Instr::i64_div_s:
@@ -1155,7 +1156,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
             auto const lhs = stack[1].as<int64_t>();
             if (rhs == 0 || (lhs == std::numeric_limits<int64_t>::min() && rhs == -1))
                 goto trap;
-            binary_op(stack, div<int64_t>);
+            binary_op(stack.sp(), div<int64_t>);
             break;
         }
         case Instr::i64_div_u:
@@ -1163,7 +1164,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
             auto const rhs = stack.top().i64;
             if (rhs == 0)
                 goto trap;
-            binary_op(stack, div<uint64_t>);
+            binary_op(stack.sp(), div<uint64_t>);
             break;
         }
         case Instr::i64_rem_s:
@@ -1178,7 +1179,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
                 stack.top() = 0;
             }
             else
-                binary_op(stack, rem<int64_t>);
+                binary_op(stack.sp(), rem<int64_t>);
             break;
         }
         case Instr::i64_rem_u:
@@ -1186,47 +1187,47 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
             auto const rhs = stack.top().i64;
             if (rhs == 0)
                 goto trap;
-            binary_op(stack, rem<uint64_t>);
+            binary_op(stack.sp(), rem<uint64_t>);
             break;
         }
         case Instr::i64_and:
         {
-            binary_op(stack, std::bit_and<uint64_t>());
+            binary_op(stack.sp(), std::bit_and<uint64_t>());
             break;
         }
         case Instr::i64_or:
         {
-            binary_op(stack, std::bit_or<uint64_t>());
+            binary_op(stack.sp(), std::bit_or<uint64_t>());
             break;
         }
         case Instr::i64_xor:
         {
-            binary_op(stack, std::bit_xor<uint64_t>());
+            binary_op(stack.sp(), std::bit_xor<uint64_t>());
             break;
         }
         case Instr::i64_shl:
         {
-            binary_op(stack, shift_left<uint64_t>);
+            binary_op(stack.sp(), shift_left<uint64_t>);
             break;
         }
         case Instr::i64_shr_s:
         {
-            binary_op(stack, shift_right<int64_t>);
+            binary_op(stack.sp(), shift_right<int64_t>);
             break;
         }
         case Instr::i64_shr_u:
         {
-            binary_op(stack, shift_right<uint64_t>);
+            binary_op(stack.sp(), shift_right<uint64_t>);
             break;
         }
         case Instr::i64_rotl:
         {
-            binary_op(stack, rotl<uint64_t>);
+            binary_op(stack.sp(), rotl<uint64_t>);
             break;
         }
         case Instr::i64_rotr:
         {
-            binary_op(stack, rotr<uint64_t>);
+            binary_op(stack.sp(), rotr<uint64_t>);
             break;
         }
 
@@ -1269,32 +1270,32 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
 
         case Instr::f32_add:
         {
-            binary_op(stack, add<float>);
+            binary_op(stack.sp(), add<float>);
             break;
         }
         case Instr::f32_sub:
         {
-            binary_op(stack, sub<float>);
+            binary_op(stack.sp(), sub<float>);
             break;
         }
         case Instr::f32_mul:
         {
-            binary_op(stack, mul<float>);
+            binary_op(stack.sp(), mul<float>);
             break;
         }
         case Instr::f32_div:
         {
-            binary_op(stack, fdiv<float>);
+            binary_op(stack.sp(), fdiv<float>);
             break;
         }
         case Instr::f32_min:
         {
-            binary_op(stack, fmin<float>);
+            binary_op(stack.sp(), fmin<float>);
             break;
         }
         case Instr::f32_max:
         {
-            binary_op(stack, fmax<float>);
+            binary_op(stack.sp(), fmax<float>);
             break;
         }
         case Instr::f32_copysign:
@@ -1304,7 +1305,7 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
             //       while this can be implemented with just generic registers and integer
             //       instructions: (a & ABS_MASK) | (b & SIGN_MASK).
             //       https://godbolt.org/z/aPqvfo
-            binary_op(stack, static_cast<float (*)(float, float)>(std::copysign));
+            binary_op(stack.sp(), static_cast<float (*)(float, float)>(std::copysign));
             break;
         }
 
@@ -1347,37 +1348,37 @@ ExecutionResult execute(Instance& instance, FuncIdx func_idx, const Value* args,
 
         case Instr::f64_add:
         {
-            binary_op(stack, add<double>);
+            binary_op(stack.sp(), add<double>);
             break;
         }
         case Instr::f64_sub:
         {
-            binary_op(stack, sub<double>);
+            binary_op(stack.sp(), sub<double>);
             break;
         }
         case Instr::f64_mul:
         {
-            binary_op(stack, mul<double>);
+            binary_op(stack.sp(), mul<double>);
             break;
         }
         case Instr::f64_div:
         {
-            binary_op(stack, fdiv<double>);
+            binary_op(stack.sp(), fdiv<double>);
             break;
         }
         case Instr::f64_min:
         {
-            binary_op(stack, fmin<double>);
+            binary_op(stack.sp(), fmin<double>);
             break;
         }
         case Instr::f64_max:
         {
-            binary_op(stack, fmax<double>);
+            binary_op(stack.sp(), fmax<double>);
             break;
         }
         case Instr::f64_copysign:
         {
-            binary_op(stack, static_cast<double (*)(double, double)>(std::copysign));
+            binary_op(stack.sp(), static_cast<double (*)(double, double)>(std::copysign));
             break;
         }
 
