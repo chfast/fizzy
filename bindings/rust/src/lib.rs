@@ -144,9 +144,7 @@ impl From<ExecutionResult> for sys::FizzyExecutionResult {
 impl Instance {
     pub fn execute(&mut self, func_idx: u32, args: &[Value]) -> ExecutionResult {
         ExecutionResult {
-            0: unsafe {
-                sys::fizzy_execute(self.ptr.as_ptr(), func_idx, args.as_ptr(), args.len(), 0)
-            },
+            0: unsafe { sys::fizzy_execute(self.ptr.as_ptr(), func_idx, args.as_ptr(), 0) },
         }
     }
 }
