@@ -142,9 +142,9 @@ impl From<ExecutionResult> for sys::FizzyExecutionResult {
 }
 
 impl Instance {
-    pub fn execute(&mut self, func_idx: u32, args: &[Value]) -> ExecutionResult {
+    pub unsafe fn unsafe_execute(&mut self, func_idx: u32, args: &[Value]) -> ExecutionResult {
         ExecutionResult {
-            0: unsafe { sys::fizzy_execute(self.ptr.as_ptr(), func_idx, args.as_ptr(), 0) },
+            0: sys::fizzy_execute(self.ptr.as_ptr(), func_idx, args.as_ptr(), 0),
         }
     }
 }
@@ -194,28 +194,29 @@ mod tests {
         assert!(instance.is_ok());
         let mut instance = instance.unwrap();
 
-        let result = instance.execute(0, &[]);
+        let result = unsafe { instance.unsafe_execute(0, &[]) };
         assert!(!result.trapped());
         assert!(!result.value().is_some());
 
-        let result = instance.execute(1, &[]);
+        let result = unsafe { instance.unsafe_execute(1, &[]) };
         assert!(!result.trapped());
         assert!(result.value().is_some());
         assert_eq!(result.value().unwrap().as_i32(), 42);
 
         // Explicit type specification
-        let result = instance.execute(2, &[(42 as i32).into(), (2 as i32).into()]);
+        let result =
+            unsafe { instance.unsafe_execute(2, &[(42 as i32).into(), (2 as i32).into()]) };
         assert!(!result.trapped());
         assert!(result.value().is_some());
         assert_eq!(result.value().unwrap().as_i32(), 21);
 
         // Implicit i64 types (even though the code expects i32)
-        let result = instance.execute(2, &[42.into(), 2.into()]);
+        let result = unsafe { instance.unsafe_execute(2, &[42.into(), 2.into()]) };
         assert!(!result.trapped());
         assert!(result.value().is_some());
         assert_eq!(result.value().unwrap().as_i32(), 21);
 
-        let result = instance.execute(3, &[]);
+        let result = unsafe { instance.unsafe_execute(3, &[]) };
         assert!(result.trapped());
         assert!(!result.value().is_some());
     }
