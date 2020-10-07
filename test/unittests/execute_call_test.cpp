@@ -584,6 +584,44 @@ TEST(execute_call, execute_imported_max_depth)
     EXPECT_THAT(execute(*instance, 1, {}, MaxDepth), Traps());
 }
 
+TEST(execute_call, imported_function_from_another_module_max_depth)
+{
+    /* wat2wasm
+    (module
+      (func)
+      (export "f" (func 0))
+    )
+    */
+    const auto bin1 = from_hex("0061736d0100000001040160000003020100070501016600000a040102000b");
+    const auto module1 = parse(bin1);
+    auto instance1 = instantiate(module1);
+
+    /* wat2wasm
+    (module
+      (func (import "m1" "f"))
+      (func)
+      (func call 0)
+      (func call 1)
+    )
+    */
+    const auto bin2 = from_hex(
+        "0061736d01000000010401600000020801026d31016600000304030000000a0e0302000b040010000b04001001"
+        "0b");
+    const auto module2 = parse(bin2);
+
+    const auto func_idx = fizzy::find_exported_function(module1, "f");
+    ASSERT_TRUE(func_idx.has_value());
+
+    auto sub = [&instance1, func_idx](
+                   Instance&, span<const Value> args, int depth) -> ExecutionResult {
+        return fizzy::execute(*instance1, *func_idx, args.data(), depth);
+    };
+
+    auto instance2 = instantiate(module2, {{sub, module1.typesec[0]}});
+
+    EXPECT_THAT(execute(*instance2, 2, {}, MaxDepth - 2), Traps());
+    EXPECT_THAT(execute(*instance2, 3, {}, MaxDepth - 2), Result());
+}
 // A regression test for incorrect number of arguments passed to a call.
 TEST(execute_call, call_nonempty_stack)
 {
