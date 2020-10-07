@@ -391,13 +391,15 @@ TEST(execute_call, imported_function_from_another_module)
     const auto func_idx = fizzy::find_exported_function(module1, "sub");
     ASSERT_TRUE(func_idx.has_value());
 
-    auto sub = [&instance1, func_idx](Instance&, span<const Value> args, int) -> ExecutionResult {
-        return fizzy::execute(*instance1, *func_idx, args.data());
+    auto sub = [&instance1, func_idx](
+                   Instance&, span<const Value> args, int depth) -> ExecutionResult {
+        return fizzy::execute(*instance1, *func_idx, args.data(), depth);
     };
 
     auto instance2 = instantiate(module2, {{sub, module1.typesec[0]}});
 
     EXPECT_THAT(execute(*instance2, 1, {44, 2}), Result(42));
+    EXPECT_THAT(execute(*instance2, 0, {44, 2}), Result(42));
 }
 
 TEST(execute_call, imported_table_from_another_module)
