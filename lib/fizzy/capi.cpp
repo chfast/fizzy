@@ -111,6 +111,23 @@ inline fizzy::ExternalFunction unwrap(const FizzyExternalFunction& external_func
     return fizzy::ExternalFunction{
         unwrap(external_func.function, external_func.context), unwrap(external_func.type)};
 }
+
+inline fizzy::ImportedFunction unwrap(const FizzyImportedFunction& imported_func)
+{
+    fizzy::ImportedFunction result;
+    result.module = imported_func.module ? std::string{imported_func.module} : std::string{};
+    result.name = imported_func.name ? std::string{imported_func.name} : std::string{};
+
+    fizzy::FuncType type = unwrap(imported_func.external_function.type);
+    result.inputs = std::move(type.inputs);
+    result.output = type.outputs.empty() ? std::nullopt : std::make_optional(type.outputs[0]);
+
+    result.function =
+        unwrap(imported_func.external_function.function, imported_func.external_function.context);
+
+    return result;
+}
+
 }  // namespace
 
 extern "C" {
@@ -173,6 +190,29 @@ FizzyInstance* fizzy_instantiate(const FizzyModule* module,
 
         auto instance = fizzy::instantiate(
             std::unique_ptr<const fizzy::Module>(unwrap(module)), std::move(functions));
+
+        return wrap(instance.release());
+    }
+    catch (...)
+    {
+        return nullptr;
+    }
+}
+
+FizzyInstance* fizzy_resolve_instantiate(const FizzyModule* module,
+    const FizzyImportedFunction* imported_functions, size_t imported_functions_size)
+{
+    try
+    {
+        std::vector<fizzy::ImportedFunction> unwrapped_funcs(imported_functions_size);
+        fizzy::ImportedFunction (*unwrap_imported_func_fn)(const FizzyImportedFunction&) = &unwrap;
+        std::transform(imported_functions, imported_functions + imported_functions_size,
+            unwrapped_funcs.begin(), unwrap_imported_func_fn);
+
+        std::unique_ptr<const fizzy::Module> unwrapped_module{unwrap(module)};
+        auto imports = fizzy::resolve_imported_functions(*unwrapped_module, unwrapped_funcs);
+
+        auto instance = fizzy::instantiate(std::move(unwrapped_module), std::move(imports));
 
         return wrap(instance.release());
     }

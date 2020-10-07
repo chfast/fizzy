@@ -130,6 +130,17 @@ bool fizzy_find_exported_function(
 FizzyInstance* fizzy_instantiate(const FizzyModule* module,
     const FizzyExternalFunction* imported_functions, size_t imported_functions_size);
 
+/// Imported function.
+typedef struct FizzyImportedFunction
+{
+    const char* module;
+    const char* name;
+    FizzyExternalFunction external_function;
+} FizzyImportedFunction;
+
+struct FizzyInstance* fizzy_resolve_instantiate(const FizzyModule* module,
+    const FizzyImportedFunction* imported_functions, size_t imported_functions_size);
+
 /// Free resources associated with the instance.
 /// If passed pointer is NULL, has no effect.
 void fizzy_free_instance(FizzyInstance* instance);
