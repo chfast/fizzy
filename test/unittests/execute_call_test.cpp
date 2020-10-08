@@ -559,6 +559,31 @@ TEST(execute_call, call_initial_depth)
     EXPECT_THAT(execute(*instance, 0, {}), Result());
 }
 
+TEST(execute_call, execute_imported_max_depth)
+{
+    /* wat2wasm
+    (import "mod" "foo" (func))
+    (func)
+    */
+
+    const auto wasm =
+        from_hex("0061736d01000000010401600000020b01036d6f6403666f6f0000030201000a040102000b");
+
+    const auto module = parse(wasm);
+    auto host_foo = [](Instance& /*instance*/, span<const Value>, int depth) -> ExecutionResult {
+        EXPECT_LE(depth, MaxDepth);
+        return Void;
+    };
+    const auto host_foo_type = module.typesec[0];
+
+    auto instance = instantiate(module, {{host_foo, host_foo_type}});
+
+    EXPECT_THAT(execute(*instance, 0, {}, MaxDepth - 1), Result());
+    EXPECT_THAT(execute(*instance, 1, {}, MaxDepth - 1), Result());
+    EXPECT_THAT(execute(*instance, 0, {}, MaxDepth), Traps());
+    EXPECT_THAT(execute(*instance, 1, {}, MaxDepth), Traps());
+}
+
 // A regression test for incorrect number of arguments passed to a call.
 TEST(execute_call, call_nonempty_stack)
 {
