@@ -43,6 +43,7 @@ add_compile_options(
     -Wmissing-declarations
     $<$<COMPILE_LANGUAGE:CXX>:-Wextra-semi>
     $<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>
+    -Wno-invalid-constexpr
 )
 cable_add_cxx_compiler_flag_if_supported(-Wfinal-dtor-non-final-class)
 cable_add_cxx_compiler_flag_if_supported(-Wnewline-eof)
