@@ -5,7 +5,7 @@
 [package]
 name = "fizzy"
 version = "0.6.0-dev"
-authors = ["Alex Beregszaszi", "Andrei Maiboroda", "Paweł Bylica"]
+authors = ["The Fizzy Authors"]
 license = "Apache-2.0"
 repository = "https://github.com/wasmx/fizzy"
 description = "Bindings to Fizzy, a fast, deterministic, and pedantic WebAssembly interpreter."
