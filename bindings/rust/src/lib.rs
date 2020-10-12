@@ -15,13 +15,11 @@ pub fn validate<T: AsRef<[u8]>>(input: T) -> bool {
     unsafe { sys::fizzy_validate(input.as_ref().as_ptr(), input.as_ref().len()) }
 }
 
-pub struct Module {
-    ptr: NonNull<sys::FizzyModule>,
-}
+pub struct Module(*const sys::FizzyModule);
 
 impl Drop for Module {
     fn drop(&mut self) {
-        unsafe { sys::fizzy_free_module(self.ptr.as_ptr()) }
+        unsafe { sys::fizzy_free_module(self.0) }
     }
 }
 
@@ -30,32 +28,31 @@ pub fn parse<T: AsRef<[u8]>>(input: &T) -> Result<Module, ()> {
     if ptr.is_null() {
         return Err(());
     }
-    Ok(Module {
-        ptr: unsafe { NonNull::new_unchecked(ptr) },
-    })
+    Ok(Module { 0: ptr })
 }
 
-pub struct Instance {
-    ptr: NonNull<sys::FizzyInstance>,
-}
+pub struct Instance(NonNull<sys::FizzyInstance>);
 
 impl Drop for Instance {
     fn drop(&mut self) {
-        unsafe { sys::fizzy_free_instance(self.ptr.as_ptr()) }
+        unsafe { sys::fizzy_free_instance(self.0.as_ptr()) }
     }
 }
 
 impl Module {
     // TODO: support imported functions{
     pub fn instantiate(self) -> Result<Instance, ()> {
-        let ptr = unsafe { sys::fizzy_instantiate(self.ptr.as_ptr(), std::ptr::null_mut(), 0) };
+        if self.0.is_null() {
+            return Err(());
+        }
+        let ptr = unsafe { sys::fizzy_instantiate(self.0, std::ptr::null_mut(), 0) };
         // Forget Module (and avoid calling drop) because it has been consumed by instantiate (even if it failed).
         core::mem::forget(self);
         if ptr.is_null() {
             return Err(());
         }
         Ok(Instance {
-            ptr: unsafe { NonNull::new_unchecked(ptr) },
+            0: unsafe { NonNull::new_unchecked(ptr) },
         })
     }
 }
@@ -144,7 +141,7 @@ impl From<ExecutionResult> for sys::FizzyExecutionResult {
 impl Instance {
     pub unsafe fn unsafe_execute(&mut self, func_idx: u32, args: &[Value]) -> ExecutionResult {
         ExecutionResult {
-            0: sys::fizzy_execute(self.ptr.as_ptr(), func_idx, args.as_ptr(), 0),
+            0: sys::fizzy_execute(self.0.as_ptr(), func_idx, args.as_ptr(), 0),
         }
     }
 }
