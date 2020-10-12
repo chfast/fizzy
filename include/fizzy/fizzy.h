@@ -71,6 +71,9 @@ const struct FizzyModule* fizzy_parse(const uint8_t* wasm_binary, size_t wasm_bi
 /// Should be called unless @p module was passed to fizzy_instantiate.
 void fizzy_free_module(const struct FizzyModule* module);
 
+bool fizzy_find_exported_function(
+    const struct FizzyModule* module, const char* name, uint32_t* out_func_idx);
+
 /// Instantiate a module.
 /// Takes ownership of module, i.e. @p module is invalidated after this call.
 ///
