@@ -32,6 +32,45 @@ TEST(capi, free_module_null)
     fizzy_free_module(nullptr);
 }
 
+TEST(capi, get_function_type)
+{
+    /* wat2wasm
+      (func)
+      (func (param i32 i32) (result i32) (i32.const 0))
+      (func (param i64))
+      (func (param f64) (result f32) (f32.const 0))
+    */
+    const auto wasm = from_hex(
+        "0061736d0100000001130460000060027f7f017f60017e0060017c017d030504000102030a140402000b040041"
+        "000b02000b070043000000000b");
+    const auto module = fizzy_parse(wasm.data(), wasm.size());
+    EXPECT_NE(module, nullptr);
+
+    const auto type0 = fizzy_get_function_type(module, 0);
+    EXPECT_EQ(type0.inputs_size, 0);
+    EXPECT_EQ(type0.outputs_size, 0);
+
+    const auto type1 = fizzy_get_function_type(module, 1);
+    EXPECT_EQ(type1.inputs_size, 2);
+    EXPECT_EQ(type1.inputs[0], FizzyValueTypeI32);
+    EXPECT_EQ(type1.inputs[1], FizzyValueTypeI32);
+    EXPECT_EQ(type1.outputs_size, 1);
+    EXPECT_EQ(type1.outputs[0], FizzyValueTypeI32);
+
+    const auto type2 = fizzy_get_function_type(module, 2);
+    EXPECT_EQ(type2.inputs_size, 1);
+    EXPECT_EQ(type2.inputs[0], FizzyValueTypeI64);
+    EXPECT_EQ(type2.outputs_size, 0);
+
+    const auto type3 = fizzy_get_function_type(module, 3);
+    EXPECT_EQ(type3.inputs_size, 1);
+    EXPECT_EQ(type3.inputs[0], FizzyValueTypeF64);
+    EXPECT_EQ(type3.outputs_size, 1);
+    EXPECT_EQ(type3.outputs[0], FizzyValueTypeF32);
+
+    fizzy_free_module(module);
+}
+
 TEST(capi, find_exported_function)
 {
     /* wat2wasm
